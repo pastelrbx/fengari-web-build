@@ -71,7 +71,7 @@ jobs:
     # ---- Build ----
     - name: Build
       if: steps.exists.outputs.exists == 'false'
-      run: bun run install
+      run: bun install
 
     # ---- Create release & upload artifact ----
     - name: Create GitHub Release
