@@ -71,7 +71,10 @@ jobs:
     # ---- Build ----
     - name: Install dependencies
       if: steps.exists.outputs.exists == 'false'
-      run: bun install
+      run: |
+        sed -i 's/{FENGARI}/${{ steps.npm.outputs.fengari }}/' package.json
+        sed -i 's/{INTEROP}/${{ steps.npm.outputs.interop }}/' package.json
+        bun install
 
     - name: Build
       if: steps.exists.outputs.exists == 'false'
