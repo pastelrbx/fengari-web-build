@@ -1,0 +1,98 @@
+name: Build & Release fengari-web
+
+on:
+  push:
+    branches: [ "master" ]
+
+  schedule:
+    - cron: "*/15 * * * *"
+
+  workflow_dispatch: 
+
+permissions:
+  contents: write
+
+jobs:
+  check-build-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+
+    - name: Install jq
+      run: sudo apt-get update && sudo apt-get install -y jq
+
+    # ---- Get versions ----
+    - name: Get local package version
+      id: local
+      run: |
+        VERSION=$(jq -r '.version' package.json)
+        echo "package=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Get npm dependency versions
+      id: npm
+      run: |
+        FENGARI=$(npm view fengari version)
+        INTEROP=$(npm view fengari-interop version)
+
+        echo "fengari=$FENGARI" >> $GITHUB_OUTPUT
+        echo "interop=$INTEROP" >> $GITHUB_OUTPUT
+
+    - name: Compose release tag
+      id: tag
+      run: |
+        TAG="${{ steps.local.outputs.package }}-${{ steps.npm.outputs.fengari }}-${{ steps.npm.outputs.interop }}"
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "Using tag: $TAG"
+
+    # ---- Check if tag already exists ----
+    - name: Check if release exists
+      id: exists
+      run: |
+        if gh release view "${{ steps.tag.outputs.tag }}" > /dev/null 2>&1; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # ---- Stop early if release already exists ----
+    - name: Stop if release already exists
+      if: steps.exists.outputs.exists == 'true'
+      run: |
+        echo "Release already exists. Nothing to do."
+        exit 0
+
+    # ---- Build ----
+    - name: Install dependencies
+      if: steps.exists.outputs.exists == 'false'
+      run: npm install
+
+    - name: Build
+      if: steps.exists.outputs.exists == 'false'
+      run: npm run build
+
+    # ---- Create release & upload artifact ----
+    - name: Create GitHub Release
+      if: steps.exists.outputs.exists == 'false'
+      run: |
+        gh release create "${{ steps.tag.outputs.tag }}" \
+          --title "${{ steps.tag.outputs.tag }}" \
+          --notes "Auto build for:
+          - package: ${{ steps.local.outputs.package }}
+          - fengari: ${{ steps.npm.outputs.fengari }}
+          - fengari-interop: ${{ steps.npm.outputs.interop }}"
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload dist to release
+      if: steps.exists.outputs.exists == 'false'
+      run: |
+        gh release upload "${{ steps.tag.outputs.tag }}" dist/** --clobber
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
