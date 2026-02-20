@@ -69,16 +69,9 @@ jobs:
         exit 0
 
     # ---- Build ----
-    - name: Install dependencies
-      if: steps.exists.outputs.exists == 'false'
-      run: |
-        sed -i 's/{FENGARI}/${{ steps.npm.outputs.fengari }}/' package.json
-        sed -i 's/{INTEROP}/${{ steps.npm.outputs.interop }}/' package.json
-        bun install
-
     - name: Build
       if: steps.exists.outputs.exists == 'false'
-      run: bun run build
+      run: bun run install
 
     # ---- Create release & upload artifact ----
     - name: Create GitHub Release
