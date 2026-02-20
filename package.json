@@ -14,8 +14,8 @@
     "homepage": "https://github.com/fengari-lua/fengari-web#readme",
     "main": "dist/fengari-web.bundle.js",
     "dependencies": {
-        "fengari": "latest",
-        "fengari-interop": "latest"
+        "fengari": "{FENGARI}",
+        "fengari-interop": "{INTEROP}"
     },
     "devDependencies": {
         "@babel/core": "^7.1.6",
