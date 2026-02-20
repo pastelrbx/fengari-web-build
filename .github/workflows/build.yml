@@ -80,7 +80,7 @@ jobs:
         gh release create "${{ steps.tag.outputs.tag }}" \
           --title "${{ steps.tag.outputs.tag }}" \
           --notes "Auto build for:
-          - package: ${{ steps.local.outputs.package }}
+          - fengari-web: ${{ steps.local.outputs.package }}
           - fengari: ${{ steps.npm.outputs.fengari }}
           - fengari-interop: ${{ steps.npm.outputs.interop }}"
       env:
